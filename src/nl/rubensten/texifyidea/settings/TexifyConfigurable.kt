@@ -36,14 +36,15 @@ class TexifyConfigurable(private val settings: TexifySettings) : SearchableConfi
             add(JPanel().apply {
                 layout = BoxLayout(this, BoxLayout.Y_AXIS)
 
-            automaticSoftWraps = addCheckbox("Enable soft wraps when opening LaTeX files")
-            automaticSecondInlineMathSymbol = addCheckbox("Automatically insert second '$'")
-            automaticUpDownBracket = addCheckbox("Automatically insert braces around text in subscript and superscript")
-            automaticItemInItemize = addCheckbox("Automatically insert '\\item' in itemize-like environments on pressing enter")
-            automaticQuoteReplacement = addSmartQuotesOptions("Off", "TeX ligatures", "TeX commands")
-            compilerCompatibility = addCompilerCompatibility()
+                automaticSoftWraps = addCheckbox("Enable soft wraps when opening LaTeX files")
+                automaticSecondInlineMathSymbol = addCheckbox("Automatically insert second '$'")
+                automaticUpDownBracket = addCheckbox("Automatically insert braces around text in subscript and superscript")
+                automaticItemInItemize = addCheckbox("Automatically insert '\\item' in itemize-like environments on pressing enter")
+                automaticQuoteReplacement = addSmartQuotesOptions("Off", "TeX ligatures", "TeX commands")
+                compilerCompatibility = addCompilerCompatibility()
 
                 add(labelDefiningCommands.getTable())
+                automaticQuoteReplacement = addSmartQuotesOptions("Off", "TeX ligatures", "TeX commands", "csquotes")
             })
         }
     }
@@ -53,7 +54,7 @@ class TexifyConfigurable(private val settings: TexifySettings) : SearchableConfi
      */
     private fun JPanel.addSmartQuotesOptions(vararg values: String): ComboBox<String> {
         val list = ComboBox(values)
-        add(JPanel(FlowLayout(FlowLayout.LEFT)).apply{
+        add(JPanel(FlowLayout(FlowLayout.LEFT)).apply {
             add(JBLabel("Smart quote substitution: "))
             add(list)
         })
@@ -68,7 +69,7 @@ class TexifyConfigurable(private val settings: TexifySettings) : SearchableConfi
         val compilerNames = LatexCompiler.values().map { it.displayName }
 
         val list = ComboBox(compilerNames.toTypedArray())
-        add(JPanel(FlowLayout(FlowLayout.LEFT)).apply{
+        add(JPanel(FlowLayout(FlowLayout.LEFT)).apply {
             add(JBLabel("Check for compatibility with compiler: "))
             add(list)
         })
