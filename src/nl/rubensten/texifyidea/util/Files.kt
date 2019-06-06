@@ -21,6 +21,7 @@ import nl.rubensten.texifyidea.file.LatexFileType
 import nl.rubensten.texifyidea.file.StyleFileType
 import nl.rubensten.texifyidea.index.LatexCommandsIndex
 import nl.rubensten.texifyidea.index.LatexDefinitionIndex
+import nl.rubensten.texifyidea.index.LatexIncludesIndex
 import nl.rubensten.texifyidea.lang.Package
 import nl.rubensten.texifyidea.psi.LatexCommands
 import java.io.File
@@ -152,11 +153,11 @@ fun Module.createExcludedDir(path: String) {
  * When no file is included, `this` file will be returned.
  */
 fun PsiFile.findRootFile(): PsiFile {
-    if (LatexCommandsIndex.getItems(this).any { "\\documentclass" == it.name }) {
+    if (this.commandsInFile().any { "\\documentclass" == it.name }) {
         return this
     }
 
-    val inclusions = project.allFileinclusions()
+    val inclusions = project.allFileInclusions()
     inclusions.forEach { (file, _) ->
         // For each root, IsChildDFS until found.
         if (!file.isRoot()) {
@@ -194,21 +195,25 @@ private fun PsiFile.isIncludedBy(childMaybe: PsiFile, mapping: Map<PsiFile, Set<
  * @return A map that maps each file to a set of all files that get included by said file. E.g.
  * when `A`↦{`B`,`C`}. Then the files `B` and `C` get included by `A`.
  */
-fun Project.allFileinclusions(): Map<PsiFile, Set<PsiFile>> {
-    val commands = LatexCommandsIndex.getItems(this)
+fun Project.allFileInclusions(): Map<PsiFile, Set<PsiFile>> {
+    val commands = LatexIncludesIndex.getItems(this)
 
     // Maps every file to all the files it includes.
     val inclusions: MutableMap<PsiFile, MutableSet<PsiFile>> = HashMap()
 
     // Find all related files.
     for (command in commands) {
-        val includedName = command.includedFileName() ?: continue
+        val includedNames = command.includedFileNames() ?: continue
         val declaredIn = command.containingFile
-        val referenced = declaredIn.findRelativeFile(includedName, null) ?: continue
 
-        val inclusionSet = inclusions[declaredIn] ?: HashSet()
-        inclusionSet.add(referenced)
-        inclusions[declaredIn] = inclusionSet
+        for (includedName in includedNames) {
+            val referenced = declaredIn.findRelativeFile(includedName) ?: continue
+
+            val inclusionSet = inclusions[declaredIn] ?: HashSet()
+            inclusionSet.add(referenced)
+            inclusions[declaredIn] = inclusionSet
+        }
+
     }
 
     return inclusions
@@ -236,13 +241,10 @@ fun PsiFile.isRoot(): Boolean {
  */
 fun PsiFile.findInclusions(): List<PsiFile> {
     val root = findRootFile()
-    return commandsInFile().asSequence()
+    return LatexIncludesIndex.getItems(this).asSequence()
             .filter { "\\input" == it.name || "\\include" == it.name || "\\includeonly" == it.name }
-            .map { it.requiredParameter(0) }
-            .filter(Objects::nonNull)
-            .map { root.findRelativeFile(it!!) }
-            .filter(Objects::nonNull)
-            .map { it!! }
+            .flatMap { it.includedFileNames()?.asSequence() ?: emptySequence() }
+            .mapNotNull { root.findRelativeFile(it) }
             .toList()
 }
 
@@ -307,16 +309,19 @@ fun PsiFile.referencedFiles(): Set<PsiFile> {
  */
 private fun PsiFile.referencedFiles(files: MutableCollection<PsiFile>) {
     val scope = fileSearchScope
-    val commands = LatexCommandsIndex.getItems(project, scope)
+    val commands = LatexIncludesIndex.getItems(project, scope)
+    val rootFile = findRootFile()
 
     commands.forEach { command ->
-        val fileName = command.includedFileName() ?: return@forEach
-        val rootFile = findRootFile()
+        val fileNames = command.includedFileNames() ?: return@forEach
         val extensions = Magic.Command.includeOnlyExtensions[command.commandToken.text]
-        val included = rootFile.findRelativeFile(fileName, extensions) ?: return@forEach
-        if (included in files) return@forEach
-        files.add(included)
-        included.referencedFiles(files)
+
+        for (fileName in fileNames) {
+            val included = rootFile.findRelativeFile(fileName, extensions) ?: return@forEach
+            if (included in files) return@forEach
+            files.add(included)
+            included.referencedFiles(files)
+        }
     }
 }
 
@@ -367,7 +372,7 @@ fun PsiFile.scanRoots(path: String, extensions: Set<String>? = null): PsiFile? {
 fun PsiFile.document(): Document? = PsiDocumentManager.getInstance(project).getDocument(this)
 
 /**
- * @see [LatexCommandsIndex.getIndexedCommands]
+ * @see [LatexCommandsIndex.getItems]
  */
 fun PsiFile.commandsInFile(): Collection<LatexCommands> = LatexCommandsIndex.getItems(this)
 
