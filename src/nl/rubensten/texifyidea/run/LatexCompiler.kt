@@ -141,6 +141,23 @@ enum class LatexCompiler(private val displayName: String, val executableName: St
 
             return command
         }
+    },
+
+    TECTONIC("Tectonic", "tectonic") {
+
+        override fun createCommand(runConfig: LatexRunConfiguration, moduleRoot: VirtualFile, moduleRoots: Array<VirtualFile>): MutableList<String> {
+
+            // The available command line arguments can be found at https://github.com/tectonic-typesetting/tectonic/blob/d7a8497c90deb08b5e5792a11d6e8b082f53bbb7/src/bin/tectonic.rs#L158
+            val command = mutableListOf(runConfig.compilerPath ?: "tectonic")
+
+            command.add("--synctex")
+
+            if (runConfig.hasOutputDirectories()) {
+                command.add("--outdir=${moduleRoot.path}/out")
+            }
+
+            return command
+        }
     };
 
     /**
