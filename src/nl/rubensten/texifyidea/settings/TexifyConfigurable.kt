@@ -1,14 +1,13 @@
 package nl.rubensten.texifyidea.settings
 
 import com.intellij.openapi.options.SearchableConfigurable
-import nl.rubensten.texifyidea.settings.labeldefiningcommands.TexifyConfigurableLabelCommands
 import com.intellij.openapi.ui.ComboBox
 import com.intellij.ui.components.JBCheckBox
 import com.intellij.ui.components.JBLabel
 import nl.rubensten.texifyidea.run.LatexCompiler
+import nl.rubensten.texifyidea.settings.labeldefiningcommands.TexifyConfigurableLabelCommands
 import java.awt.FlowLayout
 import javax.swing.BoxLayout
-import javax.swing.JCheckBox
 import javax.swing.JComponent
 import javax.swing.JPanel
 
