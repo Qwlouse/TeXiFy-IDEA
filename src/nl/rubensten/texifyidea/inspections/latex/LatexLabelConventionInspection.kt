@@ -9,6 +9,7 @@ import com.intellij.psi.PsiFile
 import nl.rubensten.texifyidea.insight.InsightGroup
 import nl.rubensten.texifyidea.inspections.TexifyInspectionBase
 import nl.rubensten.texifyidea.psi.*
+import nl.rubensten.texifyidea.settings.TexifySettings
 import nl.rubensten.texifyidea.util.*
 import kotlin.reflect.jvm.internal.impl.utils.SmartList
 
@@ -52,7 +53,8 @@ open class LatexLabelConventionInspection : TexifyInspectionBase() {
                               descriptors: MutableList<ProblemDescriptor>) {
         val commands = file.commandsInFile()
         for (cmd in commands) {
-            if (cmd.name != "\\label") {
+            val labelAnyCommands = TexifySettings.getInstance().labelAnyCommands
+            if (!labelAnyCommands.containsKey(cmd.name)) {
                 continue
             }
 
@@ -67,7 +69,10 @@ open class LatexLabelConventionInspection : TexifyInspectionBase() {
             }
 
             val prefix = Magic.Command.labeled[context.name]!!
-            if (!required[0].startsWith("$prefix:")) {
+            val position = labelAnyCommands[cmd.name]?.position ?: continue
+
+            val label = required.getOrNull(position - 1) ?: continue
+            if (!label.startsWith("$prefix:")) {
                 descriptors.add(manager.createProblemDescriptor(
                         cmd,
                         "Unconventional label prefix",
@@ -108,7 +113,17 @@ open class LatexLabelConventionInspection : TexifyInspectionBase() {
             val context = findContextCommand(command) ?: return
             val file = command.containingFile
             val document = file.document() ?: return
-            val required = command.firstChildOfType(LatexRequiredParam::class) ?: return
+            val position =
+                    TexifySettings
+                            .getInstance()
+                            .labelAnyCommands
+                            .getOrDefault(command.name, null)
+                            ?.position
+                            ?: return
+            val required = command
+                    .childrenOfType(LatexRequiredParam::class)
+                    .toList()
+                    .getOrNull(position - 1)?: return
             val oldLabel = required.firstChildOfType(LatexNormalText::class)?.text ?: return
 
             // Determine label name.
@@ -116,8 +131,7 @@ open class LatexLabelConventionInspection : TexifyInspectionBase() {
             val labelName = oldLabel.formatAsLabel()
             val createdLabelBase = if (labelName.contains(":")) {
                 Magic.Pattern.labelPrefix.matcher(labelName).replaceAll("$prefix:")
-            }
-            else {
+            } else {
                 "$prefix:$labelName"
             }
 

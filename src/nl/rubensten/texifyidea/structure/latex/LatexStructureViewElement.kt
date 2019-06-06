@@ -18,6 +18,7 @@ import nl.rubensten.texifyidea.lang.LatexRegularCommand
 import nl.rubensten.texifyidea.lang.RequiredFileArgument
 import nl.rubensten.texifyidea.psi.LatexCommands
 import nl.rubensten.texifyidea.psi.LatexTypes
+import nl.rubensten.texifyidea.settings.TexifySettings
 import nl.rubensten.texifyidea.structure.bibtex.BibtexStructureViewElement
 import nl.rubensten.texifyidea.structure.latex.SectionNumbering.DocumentClass
 import nl.rubensten.texifyidea.util.*
@@ -118,14 +119,10 @@ class LatexStructureViewElement(private val element: PsiElement) : StructureView
             val nextIndex = order(currentCmd)
 
             // Same level.
-            if (currentIndex == nextIndex) {
-                registerSameLevel(sections, child, currentCmd, treeElements, numbering)
-            }
-            else if (nextIndex > currentIndex) {
-                registerDeeper(sections, child, numbering)
-            }
-            else {
-                registerHigher(sections, child, currentCmd, treeElements, numbering)
+            when {
+                currentIndex == nextIndex -> registerSameLevel(sections, child, currentCmd, treeElements, numbering)
+                nextIndex > currentIndex -> registerDeeper(sections, child, numbering)
+                else -> registerHigher(sections, child, currentCmd, treeElements, numbering)
             }
         }
 
@@ -135,7 +132,7 @@ class LatexStructureViewElement(private val element: PsiElement) : StructureView
         }
 
         // Add label definitions.
-        addFromCommand(treeElements, commands, "\\label")
+        addFromLabelingCommands(treeElements, commands)
 
         // Add bibitem definitions.
         addFromCommand(treeElements, commands, "\\bibitem")
@@ -207,6 +204,15 @@ class LatexStructureViewElement(private val element: PsiElement) : StructureView
             val element = LatexStructureViewCommandElement.newCommand(cmd) ?: continue
             treeElements.add(element)
         }
+    }
+
+    private fun addFromLabelingCommands(treeElements: MutableList<TreeElement>, commands: List<LatexCommands>) {
+        val labelingCommands = TexifySettings.getInstance().labelCommands
+        commands.filter { labelingCommands.containsKey(it.commandToken.text) }
+                .mapNotNull { LatexStructureViewCommandElement.newCommand(it) }
+                .forEach {
+                    treeElements.add(it)
+                }
     }
 
     private fun registerHigher(sections: Deque<LatexStructureViewCommandElement>,

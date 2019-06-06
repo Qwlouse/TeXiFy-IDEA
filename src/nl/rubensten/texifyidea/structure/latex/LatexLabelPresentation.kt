@@ -4,20 +4,26 @@ import com.intellij.navigation.ItemPresentation
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import nl.rubensten.texifyidea.TexifyIcons
 import nl.rubensten.texifyidea.psi.LatexCommands
-import nl.rubensten.texifyidea.util.Magic
+import nl.rubensten.texifyidea.settings.TexifySettings
 import nl.rubensten.texifyidea.util.requiredParameter
 
 /**
  * @author Ruben Schellekens
  */
-class LatexLabelPresentation(val labelCommand: LatexCommands) : ItemPresentation {
+class LatexLabelPresentation(labelCommand: LatexCommands) : ItemPresentation {
 
     private val locationString: String
+    private val presentableText: String
 
     init {
-        if (labelCommand.commandToken.text !in Magic.Command.labels) {
-            throw IllegalArgumentException("command is no \\label-command")
+        val labelingCommands = TexifySettings.getInstance().labelCommands
+        if (!labelingCommands.containsKey(labelCommand.commandToken.text)) {
+            val token = labelCommand.commandToken.text
+            throw IllegalArgumentException("command '$token' is no \\label-command")
         }
+
+        val position = labelingCommands[labelCommand.commandToken.text ?: ""]?.position ?: 1
+        presentableText = labelCommand.requiredParameter(position - 1) ?: "no label found"
 
         // Location string.
         val manager = FileDocumentManager.getInstance()
@@ -26,7 +32,7 @@ class LatexLabelPresentation(val labelCommand: LatexCommands) : ItemPresentation
         this.locationString = labelCommand.containingFile.name + ":" + line
     }
 
-    override fun getPresentableText() = labelCommand.requiredParameter(0) ?: ""
+    override fun getPresentableText() = presentableText
 
     override fun getLocationString() = locationString
 

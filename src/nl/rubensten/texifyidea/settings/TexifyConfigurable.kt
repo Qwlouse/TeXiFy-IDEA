@@ -1,11 +1,14 @@
 package nl.rubensten.texifyidea.settings
 
 import com.intellij.openapi.options.SearchableConfigurable
+import nl.rubensten.texifyidea.settings.labeldefiningcommands.TexifyConfigurableLabelCommands
 import com.intellij.openapi.ui.ComboBox
 import com.intellij.ui.components.JBCheckBox
 import com.intellij.ui.components.JBLabel
 import java.awt.FlowLayout
 import javax.swing.BoxLayout
+import javax.swing.JCheckBox
+import javax.swing.JComponent
 import javax.swing.JPanel
 
 /**
@@ -18,22 +21,28 @@ class TexifyConfigurable(private val settings: TexifySettings) : SearchableConfi
     private lateinit var automaticUpDownBracket: JBCheckBox
     private lateinit var automaticItemInItemize: JBCheckBox
     private lateinit var automaticQuoteReplacement: ComboBox<String>
+    private lateinit var labelDefiningCommands: TexifyConfigurableLabelCommands
 
     override fun getId() = "TexifyConfigurable"
 
     override fun getDisplayName() = "TeXiFy"
 
-    override fun createComponent() = JPanel(FlowLayout(FlowLayout.LEFT)).apply {
-        add(JPanel().apply {
-            layout = BoxLayout(this, BoxLayout.Y_AXIS)
+    override fun createComponent(): JComponent? {
+        labelDefiningCommands = TexifyConfigurableLabelCommands(settings)
 
-            automaticSoftWraps = addCheckbox("Enable soft wraps when opening LaTeX files")
-            automaticSecondInlineMathSymbol = addCheckbox("Automatically insert second '$'")
-            automaticUpDownBracket = addCheckbox("Automatically insert braces around text in subscript and superscript")
-            automaticItemInItemize = addCheckbox("Automatically insert '\\item' in itemize-like environments on pressing enter")
-            automaticQuoteReplacement = addSmartQuotesOptions("Off", "TeX ligatures", "TeX commands")
+        return JPanel(FlowLayout(FlowLayout.LEFT)).apply {
+            add(JPanel().apply {
+                layout = BoxLayout(this, BoxLayout.Y_AXIS)
 
-        })
+                automaticSoftWraps = addCheckbox("Enable soft wraps when opening LaTeX files")
+                automaticSecondInlineMathSymbol = addCheckbox("Automatically insert second '$'")
+                automaticUpDownBracket = addCheckbox("Automatically insert braces around text in subscript and superscript")
+                automaticItemInItemize = addCheckbox("Automatically insert '\\item' in itemize-like environments on pressing enter")
+                automaticQuoteReplacement = addSmartQuotesOptions("Off", "TeX ligatures", "TeX commands")
+
+                add(labelDefiningCommands.getTable())
+            })
+        }
     }
 
     /**
@@ -61,6 +70,7 @@ class TexifyConfigurable(private val settings: TexifySettings) : SearchableConfi
                 || automaticSecondInlineMathSymbol.isSelected != settings.automaticSecondInlineMathSymbol
                 || automaticUpDownBracket.isSelected != settings.automaticUpDownBracket
                 || automaticItemInItemize.isSelected != settings.automaticItemInItemize
+                || labelDefiningCommands.isModified()
                 || automaticQuoteReplacement.selectedIndex != settings.automaticQuoteReplacement.ordinal
     }
 
@@ -70,6 +80,7 @@ class TexifyConfigurable(private val settings: TexifySettings) : SearchableConfi
         settings.automaticUpDownBracket = automaticUpDownBracket.isSelected
         settings.automaticItemInItemize = automaticItemInItemize.isSelected
         settings.automaticQuoteReplacement = TexifySettings.QuoteReplacement.values()[automaticQuoteReplacement.selectedIndex]
+        labelDefiningCommands.apply()
     }
 
     override fun reset() {
@@ -77,6 +88,7 @@ class TexifyConfigurable(private val settings: TexifySettings) : SearchableConfi
         automaticSecondInlineMathSymbol.isSelected = settings.automaticSecondInlineMathSymbol
         automaticUpDownBracket.isSelected = settings.automaticUpDownBracket
         automaticItemInItemize.isSelected = settings.automaticItemInItemize
+        labelDefiningCommands.reset()
         automaticQuoteReplacement.selectedIndex = settings.automaticQuoteReplacement.ordinal
     }
 }
