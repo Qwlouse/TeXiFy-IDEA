@@ -152,7 +152,7 @@ enum class LatexCompiler(val displayName: String, val executableName: String) {
 
             command.add("--synctex")
 
-            if (runConfig.hasOutputDirectories()) {
+            if (runConfig.hasOutputDirectories) {
                 command.add("--outdir=${moduleRoot.path}/out")
             }
 
