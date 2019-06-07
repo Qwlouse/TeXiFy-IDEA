@@ -2,21 +2,19 @@ package nl.rubensten.texifyidea.inspections.latex
 
 import com.intellij.codeInsight.daemon.quickFix.CreateFileFix
 import com.intellij.codeInspection.InspectionManager
-import com.intellij.codeInspection.LocalQuickFix
 import com.intellij.codeInspection.ProblemDescriptor
 import com.intellij.codeInspection.ProblemHighlightType
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiFile
-import nl.rubensten.texifyidea.index.LatexCommandsIndex
 import nl.rubensten.texifyidea.insight.InsightGroup
 import nl.rubensten.texifyidea.inspections.TexifyInspectionBase
 import nl.rubensten.texifyidea.lang.LatexCommand
 import nl.rubensten.texifyidea.lang.RequiredArgument
 import nl.rubensten.texifyidea.lang.RequiredFileArgument
-import nl.rubensten.texifyidea.psi.LatexNormalText
+import nl.rubensten.texifyidea.util.commandsInFile
 import nl.rubensten.texifyidea.util.findFile
 import nl.rubensten.texifyidea.util.findRootFile
-import nl.rubensten.texifyidea.util.firstChildOfType
+import nl.rubensten.texifyidea.util.splitContent
 
 /**
  * @author Ruben Schellekens
@@ -32,7 +30,7 @@ open class LatexFileNotFoundInspection : TexifyInspectionBase() {
     override fun inspectFile(file: PsiFile, manager: InspectionManager, isOntheFly: Boolean): MutableList<ProblemDescriptor> {
         val descriptors = descriptorList()
 
-        val commands = LatexCommandsIndex.getItems(file)
+        val commands = file.commandsInFile()
         for (command in commands) {
             // Only consider default commands with a file argument.
             val default = LatexCommand.lookup(command.name) ?: continue
@@ -55,7 +53,7 @@ open class LatexFileNotFoundInspection : TexifyInspectionBase() {
                 val parameter = parameters[i]
 
                 // get file name of the command or continue with next parameter
-                val fileName = parameter.requiredParam?.firstChildOfType(LatexNormalText::class)?.text ?: continue
+                val fileNames = parameter.splitContent()
 
                 // get root file of the document actual worked with
                 val root = file.findRootFile()
@@ -63,32 +61,30 @@ open class LatexFileNotFoundInspection : TexifyInspectionBase() {
                 // get the virtual file of the root file
                 val containingDirectory = root.containingDirectory.virtualFile
 
-                // check if the given name is reachable form the root file
-                val relative = containingDirectory.findFile(fileName, extensions)
+                for (fileName in fileNames) {
+                    // check if the given name is reachable form the root file
+                    val relative = containingDirectory.findFile(fileName, extensions)
 
-                if (relative != null) {
-                    continue
-                }
+                    if (relative != null) continue
 
-                val fixes: MutableList<LocalQuickFix> = mutableListOf(
-                        CreateFileFix(false, fileName, root.containingDirectory)
-                )
+                    val fixes = mutableListOf(CreateFileFix(false, fileName, root.containingDirectory))
 
-                // Create quick fixes for all extensions if none was supplied in the argument
-                if (extensions.none { fileName.endsWith(".$it") }) {
-                    extensions.forEach {
-                        fixes.add(0, CreateFileFix(false, "$fileName.$it", root.containingDirectory))
+                    // Create quick fixes for all extensions if none was supplied in the argument
+                    if (extensions.none { fileName.endsWith(".$it") }) {
+                        extensions.forEach {
+                            fixes.add(0, CreateFileFix(false, "$fileName.$it", root.containingDirectory))
+                        }
                     }
-                }
 
-                descriptors.add(manager.createProblemDescriptor(
-                        parameter,
-                        TextRange(1, parameter.textLength - 1),
-                        "File not found",
-                        ProblemHighlightType.GENERIC_ERROR,
-                        isOntheFly,
-                        *fixes.toTypedArray()
-                ))
+                    descriptors.add(manager.createProblemDescriptor(
+                            parameter,
+                            TextRange(1, parameter.textLength - 1),
+                            "File '$fileName' not found",
+                            ProblemHighlightType.GENERIC_ERROR,
+                            isOntheFly,
+                            *fixes.toTypedArray()
+                    ))
+                }
             }
         }
 

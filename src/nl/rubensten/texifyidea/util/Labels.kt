@@ -14,14 +14,14 @@ import nl.rubensten.texifyidea.settings.TexifySettings
  *
  * @return A set containing all labels that are defined in the fileset of the given file.
  */
-fun PsiFile.findLabelsInFileSet(): Set<String> = (findAllLabelsInFileSet() + findBibtexLabelsInFileSet()).toSet()
+fun PsiFile.findLabelsInFileSet(): Set<String> = (findLatexLabelsInFileSet() + findBibtexLabelsInFileSet()).toSet()
 
 /**
  * Finds all the defined latex labels in the fileset of the file.
  *
  * @return A set containing all labels that are defined in the fileset of the given file.
  */
-fun PsiFile.findAllLabelsInFileSet(): Sequence<String> {
+fun PsiFile.findLatexLabelsInFileSet(): Sequence<String> {
     val commands = TexifySettings.getInstance().labelCommands
     return findLabelingCommandsSequence()
             .map { it.name to it.requiredParameters }

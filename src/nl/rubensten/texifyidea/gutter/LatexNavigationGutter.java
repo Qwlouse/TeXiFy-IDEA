@@ -3,8 +3,10 @@ package nl.rubensten.texifyidea.gutter;
 import com.intellij.codeInsight.daemon.RelatedItemLineMarkerInfo;
 import com.intellij.codeInsight.daemon.RelatedItemLineMarkerProvider;
 import com.intellij.codeInsight.navigation.NavigationGutterIconBuilder;
+import com.intellij.ide.util.gotoByName.GotoFileCellRenderer;
 import com.intellij.openapi.roots.ProjectRootManager;
 import com.intellij.openapi.vfs.VirtualFile;
+import com.intellij.openapi.wm.ex.WindowManagerEx;
 import com.intellij.psi.PsiDirectory;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
@@ -16,11 +18,14 @@ import nl.rubensten.texifyidea.psi.LatexCommands;
 import nl.rubensten.texifyidea.psi.LatexRequiredParam;
 import nl.rubensten.texifyidea.util.FilesKt;
 import nl.rubensten.texifyidea.util.PsiCommandsKt;
+import nl.rubensten.texifyidea.util.PsiKt;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.swing.*;
 import java.util.*;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * @author Ruben Schellekens
@@ -41,10 +46,6 @@ public class LatexNavigationGutter extends RelatedItemLineMarkerProvider {
         }
 
         LatexCommands commands = (LatexCommands)element;
-        PsiElement commandToken = commands.getCommandToken();
-        if (commandToken == null) {
-            return;
-        }
 
         String fullCommand = commands.getCommandToken().getText();
         if (fullCommand == null) {
@@ -80,11 +81,10 @@ public class LatexNavigationGutter extends RelatedItemLineMarkerProvider {
             return;
         }
 
-        // Make filename. Substring is to remove { and }.
-        String fileName = requiredParams.get(0).getGroup().getText();
-        fileName = fileName.substring(1, fileName.length() - 1);
+        // Find filenames.
+        List<String> fileNames = PsiKt.splitContent(requiredParams.get(0), ",");
 
-        // Look up target file.
+        // Look up target files.
         PsiFile containingFile = element.getContainingFile();
         if (containingFile == null) {
             return;
@@ -100,24 +100,32 @@ public class LatexNavigationGutter extends RelatedItemLineMarkerProvider {
         ProjectRootManager rootManager = ProjectRootManager.getInstance(element.getProject());
         Collections.addAll(roots, rootManager.getContentSourceRoots());
 
-        VirtualFile file = null;
-        for (VirtualFile root : roots) {
-            VirtualFile foundFile = FilesKt.findFile(root, fileName, argument.getSupportedExtensions());
-            if (foundFile != null) {
-                file = foundFile;
-                break;
-            }
-        }
+        PsiManager psiManager = PsiManager.getInstance(element.getProject());
 
-        if (file == null) {
-            return;
-        }
+        List<PsiFile> files = fileNames.stream()
+            .map(fileName -> {
+                for (VirtualFile root : roots) {
+                    VirtualFile foundFile = FilesKt.findFile(root, fileName, argument.getSupportedExtensions());
+                    if (foundFile != null) {
+                        return psiManager.findFile(foundFile);
+                    }
+                }
+                return null;
+            })
+            .filter(Objects::nonNull)
+            .collect(Collectors.toList());
+
+        if (files.isEmpty()) return;
 
         // Build gutter icon.
+        int maxSize = WindowManagerEx.getInstanceEx().getFrame(element.getProject()).getSize().width;
+
         NavigationGutterIconBuilder<PsiElement> builder = NavigationGutterIconBuilder
-                .create(TexifyIcons.getIconFromExtension(file.getExtension()))
-                .setTarget(PsiManager.getInstance(element.getProject()).findFile(file))
-                .setTooltipText("Go to referenced file '" + file.getName() + "'");
+                .create(TexifyIcons.getIconFromExtension(argument.getDefaultExtension()))
+                .setTargets(files)
+                .setPopupTitle("Navigate to Referenced File")
+                .setTooltipText("Go to referenced file")
+                .setCellRenderer(new GotoFileCellRenderer(maxSize));
 
         result.add(builder.createLineMarkerInfo(element));
     }
