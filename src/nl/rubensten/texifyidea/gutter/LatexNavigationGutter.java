@@ -83,6 +83,7 @@ public class LatexNavigationGutter extends RelatedItemLineMarkerProvider {
 
         // Find filenames.
         List<String> fileNames = PsiKt.splitContent(requiredParams.get(0), ",");
+        fileNames = fileNames.stream().map(String::trim).collect(Collectors.toList());
 
         // Look up target files.
         PsiFile containingFile = element.getContainingFile();
