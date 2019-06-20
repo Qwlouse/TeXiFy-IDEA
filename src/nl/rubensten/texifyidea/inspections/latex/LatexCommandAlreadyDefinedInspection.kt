@@ -8,7 +8,13 @@ import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiFile
 import nl.rubensten.texifyidea.insight.InsightGroup
 import nl.rubensten.texifyidea.inspections.TexifyInspectionBase
+import nl.rubensten.texifyidea.lang.magic.MagicCommentScope
 import nl.rubensten.texifyidea.psi.LatexCommands
+import nl.rubensten.texifyidea.util.document
+import nl.rubensten.texifyidea.util.forcedFirstRequiredParameterAsCommand
+import nl.rubensten.texifyidea.util.isKnown
+import nl.rubensten.texifyidea.util.replaceString
+import java.util.*
 import nl.rubensten.texifyidea.util.*
 
 /**
@@ -16,11 +22,18 @@ import nl.rubensten.texifyidea.util.*
  */
 class LatexCommandAlreadyDefinedInspection : TexifyInspectionBase() {
 
-    override fun getInspectionGroup() = InsightGroup.LATEX
+    override val inspectionGroup = InsightGroup.LATEX
+
+    override val inspectionId = "CommandAlreadyDefined"
+
+    override val ignoredSuppressionScopes = EnumSet.of(
+            MagicCommentScope.ENVIRONMENT,
+            MagicCommentScope.MATH_ENVIRONMENT,
+            MagicCommentScope.COMMAND,
+            MagicCommentScope.GROUP
+    )!!
 
     override fun getDisplayName() = "Command is already defined"
-
-    override fun getInspectionId() = "CommandAlreadyDefined"
 
     override fun inspectFile(file: PsiFile, manager: InspectionManager, isOntheFly: Boolean): List<ProblemDescriptor> {
         val descriptors = descriptorList()

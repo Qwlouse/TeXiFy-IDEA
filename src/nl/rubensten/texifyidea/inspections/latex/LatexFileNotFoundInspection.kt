@@ -12,18 +12,24 @@ import nl.rubensten.texifyidea.lang.LatexCommand
 import nl.rubensten.texifyidea.lang.RequiredArgument
 import nl.rubensten.texifyidea.lang.RequiredFileArgument
 import nl.rubensten.texifyidea.util.commandsInFile
+import nl.rubensten.texifyidea.lang.magic.MagicCommentScope
+import nl.rubensten.texifyidea.psi.LatexNormalText
 import nl.rubensten.texifyidea.util.findFile
 import nl.rubensten.texifyidea.util.findRootFile
 import nl.rubensten.texifyidea.util.splitContent
+import nl.rubensten.texifyidea.util.firstChildOfType
+import java.util.*
 
 /**
  * @author Ruben Schellekens
  */
 open class LatexFileNotFoundInspection : TexifyInspectionBase() {
 
-    override fun getInspectionGroup() = InsightGroup.LATEX
+    override val inspectionGroup = InsightGroup.LATEX
 
-    override fun getInspectionId() = "FileNotFound"
+    override val inspectionId = "FileNotFound"
+
+    override val outerSuppressionScopes = EnumSet.of(MagicCommentScope.GROUP)!!
 
     override fun getDisplayName() = "File not found"
 

@@ -11,14 +11,20 @@ import nl.rubensten.texifyidea.inspections.TexifyInspectionBase
 import nl.rubensten.texifyidea.psi.LatexCommands
 import nl.rubensten.texifyidea.psi.LatexParameter
 import nl.rubensten.texifyidea.settings.TexifySettings
+import nl.rubensten.texifyidea.lang.magic.MagicCommentScope
 import nl.rubensten.texifyidea.util.*
+import java.util.*
 
 /**
  * @author Ruben Schellekens, Sten Wessel
  */
 open class LatexDuplicateLabelInspection : TexifyInspectionBase() {
 
-    override fun getInspectionGroup() = InsightGroup.LATEX
+    override val inspectionGroup = InsightGroup.LATEX
+
+    override val inspectionId: String = "DuplicateLabel"
+
+    override val outerSuppressionScopes = EnumSet.of(MagicCommentScope.GROUP)!!
 
     override fun getDisplayName() = "Duplicate labels"
 
