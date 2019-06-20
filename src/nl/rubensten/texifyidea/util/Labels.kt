@@ -14,14 +14,14 @@ import nl.rubensten.texifyidea.settings.TexifySettings
  *
  * @return A set containing all labels that are defined in the fileset of the given file.
  */
-fun PsiFile.findLabelsInFileSet(): Set<String> = (findAllLabelsInFileSet() + findBibtexLabelsInFileSet()).toSet()
+fun PsiFile.findLabelsInFileSet(): Set<String> = (findLatexLabelsInFileSet() + findBibtexLabelsInFileSet()).toSet()
 
 /**
  * Finds all the defined latex labels in the fileset of the file.
  *
  * @return A set containing all labels that are defined in the fileset of the given file.
  */
-fun PsiFile.findAllLabelsInFileSet(): Sequence<String> {
+fun PsiFile.findLatexLabelsInFileSet(): Sequence<String> {
     val commands = TexifySettings.getInstance().labelCommands
     return findLabelingCommandsSequence()
             .map { it.name to it.requiredParameters }
@@ -32,20 +32,6 @@ fun PsiFile.findAllLabelsInFileSet(): Sequence<String> {
                     it.second[position - 1] else null
             }.filterNot { it == "" }
 }
-
-
-/**
- * Finds all the defined latex labels in the fileset of the file.
- *
- * @return A set containing all labels that are defined in the fileset of the given file.
- */
-fun PsiFile.findLatexLabelsInFileSet(): Sequence<String> = this.commandsInFileSet()
-        .asSequence()
-        .filter { "\\label" == it.name || "\\bibitem" == it.name }
-        .mapNotNull(LatexCommands::getRequiredParameters)
-        .filter { it.isNotEmpty() }
-        .map { it.first() }
-
 
 /**
  * Finds all the defined bibtex labels in the fileset of the file.
