@@ -49,18 +49,14 @@ import java.util.regex.Pattern
  */
 class LatexUnicodeInspection : TexifyInspectionBase() {
 
-    override fun getInspectionGroup(): InsightGroup {
-        return InsightGroup.LATEX
-    }
+    override val inspectionGroup = InsightGroup.LATEX
 
     @Nls
     override fun getDisplayName(): String {
         return "Unsupported non-ASCII character"
     }
 
-    override fun getInspectionId(): String {
-        return "Unicode"
-    }
+    override val inspectionId = "Unicode"
 
     override fun inspectFile(file: PsiFile, manager: InspectionManager, isOntheFly: Boolean): List<ProblemDescriptor> {
 

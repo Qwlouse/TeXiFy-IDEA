@@ -28,8 +28,6 @@ open class LatexDuplicateLabelInspection : TexifyInspectionBase() {
 
     override fun getDisplayName() = "Duplicate labels"
 
-    override fun getInspectionId(): String = "DuplicateLabel"
-
     /**
      * checks if any label is used more than once
      */
