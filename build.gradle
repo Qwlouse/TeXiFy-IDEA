@@ -16,7 +16,7 @@ plugins {
 }
 
 group 'nl.rubensten'
-version '0.7-alpha.40'
+version '0.7-alpha.40.1'
 
 repositories {
     mavenCentral()
@@ -145,7 +145,7 @@ intellij {
         alternativeIdePath ".gradle/ide/pycharm-${pycharmVersion}"
     }
 
-    version '2019.1'
+//    version '2019.1'
 }
 
 test {
