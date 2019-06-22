@@ -27,7 +27,11 @@
     <id>nl.rubensten.texifyidea</id>
     <name>TeXiFy IDEA</name>
     <version>0.6.5</version>
-    <idea-version since-build="173.*"/>
+    <!--
+    Info about build ranges: https://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/build_number_ranges.html
+    Note that an xyz branch corresponds to version 20xy.z
+    -->
+    <idea-version since-build="192"/>
     <vendor url="https://ruben-sten.github.io/home/index.html">Ruben-Sten</vendor>
 
     <!-- Dependencies (must be defined to ensure compatibility with other IDEs) -->
